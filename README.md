@@ -10,7 +10,7 @@ It currently supports:
 ## Dependencies
 Recommended `Python 3.7`, although it should support `Python >=3.5 <=3.9`. Install all dependencies:
 ```
-pip install -r requirements.txt
+pip3 install -r requirements.txt
 ```
 
 ## Test & Run
