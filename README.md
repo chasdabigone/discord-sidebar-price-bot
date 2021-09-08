@@ -1,12 +1,11 @@
 # discord-sidebar-price-bot
-Inspired by [pipercucu/DiscordSidebarPriceBot](https://github.com/pipercucu/DiscordSidebarPriceBot), 
-these Python scripts can run Discord bots that pull live data at intervals and display it on the sidebar of a Discord guild (i.e. server). 
+A trimmed down fork of [edenau/discord-sidebar-price-bot](https://github.com/edenau/discord-sidebar-price-bot), 
+this script runs a Discord bot that pulls data at live intervals from the Tezos blockchain and coingecko api.
+
 It currently supports:
 
-- **Cryptocurrency price** data (in USD, BTC, and/or ETH) from Coingecko API
-- **Gas price** of the Ethereum blockchain (in gwei) from Etherscan API or gasnow API
-- **Forex price** from exchangeratesapi
-- **Crypto Fear & Greed Index** from Alternate.me API
+- **QUIPUSWAP PAIRS** data (in USD) from the Tezos blockchain using a node of your choice.
+- **XTZ Price** in USD from the coingecko API
 
 ## Dependencies
 Recommended `Python 3.7`, although it should support `Python >=3.5 <=3.9`. Install all dependencies:
@@ -15,7 +14,7 @@ pip install -r requirements.txt
 ```
 
 ## Test & Run
-### Cryptocurrency Price Bot
+### Price Bot
 1. Cache the cryptocurrency ticker list from Coincegko by generating a *crypto_cache.json* file.
 ```
 python crypto_cache.py -v
@@ -32,37 +31,6 @@ It requires a unique Discord bot key and (non-unique) Guild ID per bot.
 python crypto_run.py -t BTC
 ```
 Replace the ticker `BTC` with any cryptocurrency you have configured in Step 2.
-
-### Gas Price Bot
-1. Configure [gas_config.yaml](gas_config.yaml) using the template provided.
-It requires a unique Discord bot key and (non-unique) Guild ID per bot.
-It also requires an Etherscan API key if you would like to use Etherscan API.
-
-2. Run a gas price bot using Etherscan API:
-```
-python gas_run.py -s etherscan
-```
-Replace `etherscan` with `gasnow` to use Gasnow API (no key required!).
-
-### Forex Price Bot
-1. Configure [forex_config.yaml](forex_config.yaml) using the template provided. 
-It requires a unique Discord bot key and (non-unique) Guild ID per bot.
-1 sidebar bot per forex pair (expressed by their ticker/ticker e.g. GBP/HKD).
-
-2. Run a forex price bot:
-```
-python forex_run.py -p GBP/HKD
-```
-Replace `GBP/HKD` with any forex pair you have configured in Step 1.
-
-### Crypto Fear & Greed Index
-1. Configure [cfgi_config.yaml](cfgi_config.yaml) using the template provided. 
-It requires a unique Discord bot key and (non-unique) Guild ID per bot.
-
-2. Run a bot:
-```
-python cfgi_run.py
-```
 
 ## Deploy
 Once you are familiar with running a single sidebar bot, you can run multiple bots concurrently by calling `./bot.sh` and kill all bots by calling `./kill.sh`. You might want to modify the commands in `./bot.sh` to suit your own needs.
