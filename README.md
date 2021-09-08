@@ -1,6 +1,6 @@
 # discord-sidebar-price-bot
 A trimmed down fork of [edenau/discord-sidebar-price-bot](https://github.com/edenau/discord-sidebar-price-bot), 
-this script runs a Discord bot that pulls data at live intervals from the Tezos blockchain and coingecko api.
+this script runs a Discord bot that pulls live data at intervals from the Tezos blockchain and coingecko api.
 
 It currently supports:
 
