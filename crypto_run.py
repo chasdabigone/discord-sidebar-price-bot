@@ -4,6 +4,8 @@ Run a Discord sidebar bot that shows price of a cryptocurrency
 # Example:
 # python3 crypto_run.py -t BTC &
 
+
+
 def get_currencySymbol(currTicker: str) -> str:
     """
     Get currency symbol
@@ -14,6 +16,8 @@ def get_currencySymbol(currTicker: str) -> str:
         return '₿'
     elif currTicker.upper() == 'ETH':
         return 'Ξ'
+    elif currTicker.upper() == 'XTZ':
+        return 'ꜩ'
     else:
         raise NotImplementedError('Invalid currency symbol')
 
@@ -57,6 +61,24 @@ def get_price(id_: str,
                 print(r.status_code)
             time.sleep(10)
 
+def get_kUSD():
+    from pytezos import pytezos
+    import math
+    global kUSDratio
+    global kUSDpeg
+    global kUSDprice
+    
+    
+    quipu = pytezos.using('https://mainnet-tezos.giganode.io/')
+    quipu = quipu.contract('KT1K4EwTpbvYN9agJdjpyJm4ZZdhpUNKB3F6')
+    kUSDamt = quipu.storage['storage']['token_pool']()
+    XTZamt = quipu.storage['storage']['tez_pool']()
+
+    kUSDratio = (XTZamt / math.pow(10, 6)) / (kUSDamt / math.pow(10, 18))
+    kUSDprice = priceList['usd']*kUSDratio
+    kUSDpeg = (kUSDprice - 1) * 100
+    
+
 def main(ticker: str,
          verbose: bool = False) -> None:
     import json, yaml
@@ -66,9 +88,11 @@ def main(ticker: str,
     # 1. Load config
     filename = 'crypto_config.yaml'
     with open(filename) as f:
+        
         config = yaml.load(f, Loader=yaml.Loader)[ticker.upper()] # Assume tickers in yaml file are in uppercase
         if verbose:
             print(f'{ticker} data loaded from {filename}')
+            
 
     # 2. Load cache
     filename = 'crypto_cache.json'
@@ -99,8 +123,10 @@ def main(ticker: str,
         price_now = round(price_now, numDecimalPlace)
         pct_change = priceList[f'{unit}_24h_change']
 
-        nickname = f'{ticker.upper()} {get_currencySymbol(unit)}{price_now}'
-        status = f'{get_currencySymbol(unit)} 24h: {pct_change:.2f}%'
+        nickname = 'kUSD Peg' + ' ' + str(round(kUSDpeg, 2)) + '%'
+        status = 'kUSD Price' + ' ' + '$' + str(round(kUSDprice, 2))
+
+        await client.wait_until_ready()
         await client.get_guild(config['guildId']).me.edit(nick=nickname)
         await client.change_presence(activity=discord.Activity(type=discord.ActivityType.watching,
                                                                name=status))
@@ -113,7 +139,13 @@ def main(ticker: str,
         """
         while True:
             # 5. Fetch price
-            priceList = get_price(id_, config['priceUnit'], verbose)
+            global priceList
+            priceList = get_price(id_, config['priceUnit'], verbose) #replaced with getkusd()
+
+            get_kUSD()
+            
+            
+        
             # 6. Feed it to the bot
             # max. 3 priceUnit (tried to avoid using for loop)
             await send_update(priceList, config['priceUnit'][0].lower(), config['decimalPlace'][0])

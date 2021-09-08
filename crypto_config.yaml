@@ -1,11 +1,11 @@
-BTC:
+XTZ:
     priceUnit:
         - USD
     decimalPlace:
-        - 0
+        - 2
     updateFreq: 60
-    discordBotKey: <Unique Discord Bot Key>
-    guildId: <Guild ID>
+    discordBotKey: <UNIQUE KEY>
+    guildId: <UNIQUE GUILD ID>
 
 ETH:
     priceUnit:
