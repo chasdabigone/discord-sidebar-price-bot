@@ -4,24 +4,12 @@ Run a Discord sidebar bot that shows price of a cryptocurrency
 # Example:
 # python3 crypto_run.py -t BTC &
 
-from pytezos import pytezos
-global updateCounter
+
+
+
 updateCounter = 0 #so getkUSD() will have variable set
 
 
-#fetch quipuswap contract data
-quipu = pytezos.using('https://mainnet-tezos.giganode.io/')
-quipu = quipu.contract('KT1K4EwTpbvYN9agJdjpyJm4ZZdhpUNKB3F6')
-
-#fetch pair data
-pairAddress = quipu.storage['storage']['token_address']()
-pairContract = pytezos.using('https://mainnet-tezos.giganode.io/')
-pairContract = pairContract.contract(pairAddress)
-
-#find mantissa of pair
-decimals_str = pairContract.storage['token_metadata'][0]()[1]['decimals']
-#set mantissa variable
-decimals = int(decimals_str)
 
 
 
@@ -88,7 +76,7 @@ def get_kUSD():
     global quipu
     global updateCounter
     global kUSDpeg
-    global kUSDprice
+    global pairPrice
 
     #for cycling between showing XTZ/kUSD price
     if updateCounter == 0: 
@@ -98,14 +86,14 @@ def get_kUSD():
 
 
     #get xtz and pair amounts
-    kUSDamt = quipu.storage['storage']['token_pool']()
+    pairAmt = quipu.storage['storage']['token_pool']()
     XTZamt = quipu.storage['storage']['tez_pool']()
 
 
     #calculate price and peg
-    kUSDratio = (XTZamt / math.pow(10, 6)) / (kUSDamt / math.pow(10, decimals))
-    kUSDprice = priceList['usd'] * kUSDratio
-    kUSDpeg = (kUSDprice - 1) * 100
+    pairRatio = (XTZamt / math.pow(10, 6)) / (pairAmt / math.pow(10, decimals))
+    pairPrice = priceList['usd'] * pairRatio
+    kUSDpeg = (pairPrice - 1) * 100
     
 
 def main(ticker: str,
@@ -113,6 +101,10 @@ def main(ticker: str,
     import json, yaml
     import discord
     import asyncio
+    from pytezos import pytezos
+    global pairSymbol
+    global quipu
+    global decimals
 
     # 1. Load config
     filename = 'crypto_config.yaml'
@@ -140,7 +132,25 @@ def main(ticker: str,
     else:
         raise Exception(f'{ticker} is not found in {filename}, re-caching might help.')
 
-    # 4. Connect w the bot
+    # 4. Get Blockchain Data
+    #fetch quipuswap contract data
+    quipu = pytezos.using(config['tezosNode'])
+    quipu = quipu.contract(config['contractAddress'])
+
+    #fetch pair data
+    pairAddress = quipu.storage['storage']['token_address']()
+    pairContract = pytezos.using(config['tezosNode'])
+    pairContract = pairContract.contract(pairAddress)
+
+    #find symbol of pair
+    pairSymbol = pairContract.storage['token_metadata'][0]()[1]['symbol'].decode()
+
+    #find mantissa of pair
+    decimals_str = pairContract.storage['token_metadata'][0]()[1]['decimals']
+    #set mantissa variable
+    decimals = int(decimals_str)
+
+    # 5. Connect w the bot
     client = discord.Client()
     numUnit = len(config['priceUnit'])
 
@@ -154,11 +164,16 @@ def main(ticker: str,
 
 
         #set name and status
-        nickname = 'kUSD Peg' + ' ' + str(round(kUSDpeg, 2)) + '%'
+        if config['stablecoinPeg'] == True:
+            
+            nickname = pairSymbol + ' Peg' + ' ' + str(round(kUSDpeg, 2)) + '%'
 
-        if updateCounter == 1: #cycling between showing kUSD/XTZ
-            status = 'kUSD Price' + ' ' + '$' + str(round(kUSDprice, 3))
+            if updateCounter == 1: #cycling between showing kUSD/XTZ
+                status = pairSymbol + ' Price' + ' ' + '$' + str(round(pairPrice, numDecimalPlace))
+            else:
+                status = 'XTZ Price' + ' ' + '$' + str(round(priceList['usd'], 2))
         else:
+            nickname = pairSymbol + ' Price' + ' ' + '$' + str(round(pairPrice, numDecimalPlace))
             status = 'XTZ Price' + ' ' + '$' + str(round(priceList['usd'], 2))
 
 
@@ -174,7 +189,7 @@ def main(ticker: str,
         When discord client is ready
         """
         while True:
-            # 5. Fetch price
+            # 6. Fetch price
             global priceList
             priceList = get_price(id_, config['priceUnit'], verbose) #replaced with getkusd()
             
@@ -182,7 +197,7 @@ def main(ticker: str,
             
             
         
-            # 6. Feed it to the bot
+            # 7. Feed it to the bot
             # max. 3 priceUnit (tried to avoid using for loop)
             await send_update(priceList, config['priceUnit'][0].lower(), config['decimalPlace'][0])
             if len(config['priceUnit']) >= 2:
