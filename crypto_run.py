@@ -4,6 +4,25 @@ Run a Discord sidebar bot that shows price of a cryptocurrency
 # Example:
 # python3 crypto_run.py -t BTC &
 
+from pytezos import pytezos
+global updateCounter
+updateCounter = 0 #so getkUSD() will have variable set
+
+
+#fetch quipuswap contract data
+quipu = pytezos.using('https://mainnet-tezos.giganode.io/')
+quipu = quipu.contract('KT1K4EwTpbvYN9agJdjpyJm4ZZdhpUNKB3F6')
+
+#fetch pair data
+pairAddress = quipu.storage['storage']['token_address']()
+pairContract = pytezos.using('https://mainnet-tezos.giganode.io/')
+pairContract = pairContract.contract(pairAddress)
+
+#find mantissa of pair
+decimals_str = pairContract.storage['token_metadata'][0]()[1]['decimals']
+#set mantissa variable
+decimals = int(decimals_str)
+
 
 
 def get_currencySymbol(currTicker: str) -> str:
@@ -62,20 +81,30 @@ def get_price(id_: str,
             time.sleep(10)
 
 def get_kUSD():
-    from pytezos import pytezos
+    
     import math
-    global kUSDratio
+
+    global decimals
+    global quipu
+    global updateCounter
     global kUSDpeg
     global kUSDprice
-    
-    
-    quipu = pytezos.using('https://mainnet-tezos.giganode.io/')
-    quipu = quipu.contract('KT1K4EwTpbvYN9agJdjpyJm4ZZdhpUNKB3F6')
+
+    #for cycling between showing XTZ/kUSD price
+    if updateCounter == 0: 
+        updateCounter = 1
+    else:
+        updateCounter = 0
+
+
+    #get xtz and pair amounts
     kUSDamt = quipu.storage['storage']['token_pool']()
     XTZamt = quipu.storage['storage']['tez_pool']()
 
-    kUSDratio = (XTZamt / math.pow(10, 6)) / (kUSDamt / math.pow(10, 18))
-    kUSDprice = priceList['usd']*kUSDratio
+
+    #calculate price and peg
+    kUSDratio = (XTZamt / math.pow(10, 6)) / (kUSDamt / math.pow(10, decimals))
+    kUSDprice = priceList['usd'] * kUSDratio
     kUSDpeg = (kUSDprice - 1) * 100
     
 
@@ -123,8 +152,15 @@ def main(ticker: str,
         price_now = round(price_now, numDecimalPlace)
         pct_change = priceList[f'{unit}_24h_change']
 
+
+        #set name and status
         nickname = 'kUSD Peg' + ' ' + str(round(kUSDpeg, 2)) + '%'
-        status = 'kUSD Price' + ' ' + '$' + str(round(kUSDprice, 2))
+
+        if updateCounter == 1: #cycling between showing kUSD/XTZ
+            status = 'kUSD Price' + ' ' + '$' + str(round(kUSDprice, 3))
+        else:
+            status = 'XTZ Price' + ' ' + '$' + str(round(priceList['usd'], 2))
+
 
         await client.wait_until_ready()
         await client.get_guild(config['guildId']).me.edit(nick=nickname)
@@ -141,7 +177,7 @@ def main(ticker: str,
             # 5. Fetch price
             global priceList
             priceList = get_price(id_, config['priceUnit'], verbose) #replaced with getkusd()
-
+            
             get_kUSD()
             
             
