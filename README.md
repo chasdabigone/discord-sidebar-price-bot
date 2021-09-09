@@ -21,7 +21,7 @@ python3 crypto_cache.py -v
 ```
 
 2. Configure [crypto_config.yaml](crypto_config.yaml) using the template provided. 
-It requires a unique Discord bot key and (non-unique) Guild ID per bot. You also need a Quipuswap AMM contract and a Tezos node.
+It requires a unique Discord bot key and (non-unique) Guild ID per bot. You also need a Quipuswap AMM contract and a Tezos node address.
 
 
 3. Add your bot to your Discord server.
