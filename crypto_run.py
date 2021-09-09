@@ -159,7 +159,7 @@ def main(ticker: str,
             numDecimalPlace = None # round(2.3, 0) -> 2.0 but we don't want ".0"
 
         price_now = priceList[unit]
-        price_now = round(price_now, numDecimalPlace)
+        #price_now = round(price_now, numDecimalPlace)
         pct_change = priceList[f'{unit}_24h_change']
 
 
@@ -173,8 +173,8 @@ def main(ticker: str,
             else:
                 status = 'XTZ Price' + ' ' + '$' + str(round(priceList['usd'], 2))
         else:
-            nickname = pairSymbol + ' Price' + ' ' + '$' + str(round(pairPrice, numDecimalPlace))
-            status = 'XTZ Price' + ' ' + '$' + str(round(priceList['usd'], 2))
+            nickname = pairSymbol + ' ' + '$' + str(round(pairPrice, numDecimalPlace))
+            status = 'XTZ ' + '$' + str(round(priceList['usd'], 2))
 
 
         await client.wait_until_ready()
