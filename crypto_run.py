@@ -71,7 +71,7 @@ def get_price(id_: str,
 def get_kUSD():
     
     import math
-
+    from pytezos import pytezos
     global decimals
     global quipu
     global updateCounter
@@ -79,7 +79,11 @@ def get_kUSD():
     global pairPrice
     global harbingerPrice
 
-    
+    #fetch harbinger oracle price
+    harbinger = pytezos.using(config['tezosNode'])
+    harbinger = harbinger.contract('KT1Jr5t9UvGiqkvvsuUbPJHaYx24NzdUwNW9')
+    harbingerPrice = harbinger.storage['oracleData']['XTZ-USD']()[5]
+    harbingerPrice = (harbingerPrice / math.pow(10, 6))
 
 
     #for cycling between showing XTZ/kUSD price
@@ -140,11 +144,7 @@ def main(ticker: str,
 
     # 4. Get Blockchain Data
 
-    #fetch harbinger oracle price
-    harbinger = pytezos.using(config['tezosNode'])
-    harbinger = harbinger.contract('KT1AdbYiPYb5hDuEuVrfxmFehtnBCXv4Np7r')
-    harbingerPrice = harbinger.storage['assetMap']['XTZ-USD']['computedPrice']()
-    harbingerPrice = (harbingerPrice / math.pow(10, 6))
+
     
     #fetch quipuswap contract data
     quipu = pytezos.using(config['tezosNode'])
