@@ -77,6 +77,10 @@ def get_kUSD():
     global updateCounter
     global kUSDpeg
     global pairPrice
+    global harbingerPrice
+
+    
+
 
     #for cycling between showing XTZ/kUSD price
     if updateCounter == 0: 
@@ -92,12 +96,13 @@ def get_kUSD():
 
     #calculate price and peg
     pairRatio = (XTZamt / math.pow(10, 6)) / (pairAmt / math.pow(10, decimals))
-    pairPrice = priceList['usd'] * pairRatio
+    pairPrice = harbingerPrice * pairRatio
     kUSDpeg = (pairPrice - 1) * 100
     
 
 def main(ticker: str,
          verbose: bool = False) -> None:
+    import math
     import json, yaml
     import discord
     import asyncio
@@ -105,6 +110,7 @@ def main(ticker: str,
     global pairSymbol
     global quipu
     global decimals
+    global harbingerPrice
 
     # 1. Load config
     filename = 'crypto_config.yaml'
@@ -133,6 +139,13 @@ def main(ticker: str,
         raise Exception(f'{ticker} is not found in {filename}, re-caching might help.')
 
     # 4. Get Blockchain Data
+
+    #fetch harbinger oracle price
+    harbinger = pytezos.using(config['tezosNode'])
+    harbinger = harbinger.contract('KT1AdbYiPYb5hDuEuVrfxmFehtnBCXv4Np7r')
+    harbingerPrice = harbinger.storage['assetMap']['XTZ-USD']['computedPrice']()
+    harbingerPrice = (harbingerPrice / math.pow(10, 6))
+    
     #fetch quipuswap contract data
     quipu = pytezos.using(config['tezosNode'])
     quipu = quipu.contract(config['contractAddress'])
@@ -174,7 +187,7 @@ def main(ticker: str,
                 status = 'XTZ Price' + ' ' + '$' + str(round(priceList['usd'], 2))
         else:
             nickname = pairSymbol + ' ' + '$' + str(round(pairPrice, numDecimalPlace))
-            status = 'XTZ ' + '$' + str(round(priceList['usd'], 2))
+            status = 'XTZ ' + '$' + str(round(harbingerPrice, 2))
 
 
         await client.wait_until_ready()
@@ -189,9 +202,9 @@ def main(ticker: str,
         When discord client is ready
         """
         while True:
-            # 6. Fetch price
-            global priceList
-            priceList = get_price(id_, config['priceUnit'], verbose) #replaced with getkusd()
+            # 6. Fetch contract prices
+            #global priceList
+            #priceList = get_price(id_, config['priceUnit'], verbose) #replaced with getkusd()
             
             get_kUSD()
             
