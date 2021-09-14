@@ -5,70 +5,11 @@ Run a Discord sidebar bot that shows price of a cryptocurrency
 # python3 crypto_run.py -t BTC &
 
 
-
-
-updateCounter = 0 #so getkUSD() will have variable set
-
-
-
-
-
-def get_currencySymbol(currTicker: str) -> str:
-    """
-    Get currency symbol
-    """
-    if currTicker.upper() == 'USD':
-        return '$'
-    elif currTicker.upper() == 'BTC':
-        return '₿'
-    elif currTicker.upper() == 'ETH':
-        return 'Ξ'
-    elif currTicker.upper() == 'XTZ':
-        return 'ꜩ'
-    else:
-        raise NotImplementedError('Invalid currency symbol')
-
-def resolve_ambiguous_ticker(ticker: str) -> str:
-    """
-    A bodge to resolve ambiguous tickers
-    """
-    if ticker == 'UNI':
-        return 'UNISWAP'
-    elif ticker == 'FTT':
-        return 'FTX Token'
-    elif ticker == 'XOR':
-        return 'Sora'
-    elif ticker == 'DEXT':
-        return 'DexTools'
-    elif ticker == 'NOIA':
-        return 'NOIA Network'
-    else:
-        return ticker
+updateCounter = 0 #so get_blockchain() will have variable set
 
 from typing import List
-def get_price(id_: str,
-              unitList: List[str],
-              verbose: bool = False) -> dict:
-    """
-    Fetch price from CoinGecko API
-    """
-    import requests
-    import time
-    while True:
-        r = requests.get('https://api.coingecko.com/api/v3/simple/price',
-                         params={'ids': id_,
-                                 'vs_currencies': ','.join(unitList).lower(), # doesn't need to be in lowercase but just in case
-                                 'include_24hr_change': 'true'})
-        if r.status_code == 200:
-            if verbose:
-                print('200 OK')
-            return r.json()[id_]
-        else:
-            if verbose:
-                print(r.status_code)
-            time.sleep(10)
 
-def get_kUSD():
+def get_blockchain():
     
     import math
     from pytezos import pytezos
@@ -78,6 +19,7 @@ def get_kUSD():
     global kUSDpeg
     global pairPrice
     global harbingerPrice
+    global config
 
     #fetch harbinger oracle price
     harbinger = pytezos.using(config['tezosNode'])
@@ -86,7 +28,7 @@ def get_kUSD():
     harbingerPrice = (harbingerPrice / math.pow(10, 6))
 
 
-    #for cycling between showing XTZ/kUSD price
+    #for cycling between showing XTZ/pair price in peg mode
     if updateCounter == 0: 
         updateCounter = 1
     else:
@@ -101,7 +43,7 @@ def get_kUSD():
     #calculate price and peg
     pairRatio = (XTZamt / math.pow(10, 6)) / (pairAmt / math.pow(10, decimals))
     pairPrice = harbingerPrice * pairRatio
-    kUSDpeg = (pairPrice - 1) * 100
+    pairPeg = (pairPrice - 1) * 100
     
 
 def main(ticker: str,
@@ -115,6 +57,7 @@ def main(ticker: str,
     global quipu
     global decimals
     global harbingerPrice
+    global config
 
     # 1. Load config
     filename = 'crypto_config.yaml'
@@ -125,24 +68,9 @@ def main(ticker: str,
             print(f'{ticker} data loaded from {filename}')
             
 
-    # 2. Load cache
-    filename = 'crypto_cache.json'
-    with open(filename, 'r') as f:
-        coinInfoList = json.load(f)
-        if verbose:
-            print(f'Data loaded from {filename}')
 
-    # 3. Extract coin ID
-    # ok this is a bodge but it works
-    ticker_ = resolve_ambiguous_ticker(ticker)
-    for info in coinInfoList:
-        if info['symbol'].lower() == ticker_.lower() or info['name'].lower() == ticker_.lower(): # greedy (take the first match)
-            id_ = info['id']
-            break
-    else:
-        raise Exception(f'{ticker} is not found in {filename}, re-caching might help.')
 
-    # 4. Get Blockchain Data
+    # 2. Get Initial Blockchain Data
 
 
     
@@ -163,28 +91,24 @@ def main(ticker: str,
     #set mantissa variable
     decimals = int(decimals_str)
 
-    # 5. Connect w the bot
+    # 3. Connect w the bot
     client = discord.Client()
-    numUnit = len(config['priceUnit'])
+    numUnit = len(config['priceUnit'])#this isn't implemented right now
 
     async def send_update(priceList, unit, numDecimalPlace=None):
         if numDecimalPlace == 0:
             numDecimalPlace = None # round(2.3, 0) -> 2.0 but we don't want ".0"
 
-        price_now = priceList[unit]
-        #price_now = round(price_now, numDecimalPlace)
-        pct_change = priceList[f'{unit}_24h_change']
-
 
         #set name and status
         if config['stablecoinPeg'] == True:
             
-            nickname = pairSymbol + ' Peg' + ' ' + str(round(kUSDpeg, 2)) + '%'
+            nickname = pairSymbol + ' Peg' + ' ' + str(round(pairPeg, 2)) + '%'
 
-            if updateCounter == 1: #cycling between showing kUSD/XTZ
+            if updateCounter == 1: #cycling between showing pair/XTZ
                 status = pairSymbol + ' Price' + ' ' + '$' + str(round(pairPrice, numDecimalPlace))
             else:
-                status = 'XTZ Price' + ' ' + '$' + str(round(priceList['usd'], 2))
+                status = 'XTZ Price' + ' ' + '$' + str(round(harbingerPrice, 2))
         else:
             nickname = pairSymbol + ' ' + '$' + str(round(pairPrice, numDecimalPlace))
             status = 'XTZ ' + '$' + str(round(harbingerPrice, 2))
@@ -202,15 +126,14 @@ def main(ticker: str,
         When discord client is ready
         """
         while True:
-            # 6. Fetch contract prices
-            #global priceList
-            #priceList = get_price(id_, config['priceUnit'], verbose) #replaced with getkusd()
+            # 4. Fetch contract prices
+        
+            priceList = get_blockchain()
             
-            get_kUSD()
             
             
         
-            # 7. Feed it to the bot
+            # 5. Feed it to the bot
             # max. 3 priceUnit (tried to avoid using for loop)
             await send_update(priceList, config['priceUnit'][0].lower(), config['decimalPlace'][0])
             if len(config['priceUnit']) >= 2:
