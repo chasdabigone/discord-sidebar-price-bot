@@ -17,7 +17,7 @@ pip3 install -r requirements.txt
 ### Price Bot
 
 1. Configure [crypto_config.yaml](crypto_config.yaml) using the template provided. 
-It requires a unique Discord bot key and (non-unique) Guild ID per bot. You also need a Quipuswap AMM contract and a Tezos node address.
+It requires a unique Discord bot key and (non-unique) Guild ID per bot. You also need a Quipuswap AMM contract address and a Tezos node address.
 
 
 2. Add your bot to your Discord server.
