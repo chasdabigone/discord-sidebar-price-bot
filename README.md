@@ -5,7 +5,7 @@ this script runs a Discord bot that pulls live data at intervals from the Tezos 
 It currently supports:
 
 - **QUIPUSWAP PAIRS** data from the Tezos blockchain using a node of your choice.
-- **XTZ Price** in USD from the coingecko API
+- **XTZ Price** in USD from the Harbinger oracle
 
 ## Dependencies
 Recommended `Python 3.7`, although it should support `Python >=3.5 <=3.9`. Install all dependencies:
