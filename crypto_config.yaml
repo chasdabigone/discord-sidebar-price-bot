@@ -7,5 +7,5 @@ XTZ:
     discordBotKey: <UNIQUE KEY>
     guildId: <UNIQUE GUILD ID>
     contractAddress: <quipuswap contract address>
-    tezosNode: <tezos node address>
+    tezosNode: https://rpc.tzbeta.net
     stablecoinPeg: False
