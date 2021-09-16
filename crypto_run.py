@@ -95,6 +95,7 @@ def main(ticker: str,
         #set mantissa variable
         decimals = int(decimals_str)
     except:
+        print ("error initializing contract data, retrying")
         pass
         main(ticker=args.ticker,
          verbose=args.verbose)
@@ -129,6 +130,7 @@ def main(ticker: str,
                                                                name=status))
             await asyncio.sleep(config['updateFreq'] / numUnit) # in seconds
     except:
+        print ("error connecting to bot, retrying")
         pass
         main(ticker=args.ticker,
          verbose=args.verbose)
@@ -155,6 +157,7 @@ def main(ticker: str,
                 if len(config['priceUnit']) >= 3:
                     await send_update(priceList, config['priceUnit'][2].lower(), config['decimalPlace'][2])
             except:
+                print ("error feeding data to discord, retrying")
                 pass
     try:
         client.run(config['discordBotKey'])
